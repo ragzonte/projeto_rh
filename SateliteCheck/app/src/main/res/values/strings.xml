@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
+    <string name="app_name">Satélite Check</string>
+
+    <string name="yes">Sim</string>
+    <string name="no">Não</string>
+    <string name="unknown">Não informado</string>
+
+    <!-- Ações -->
+    <string name="action_grant_permission">Permitir leitura do chip</string>
+    <string name="action_app_settings">Abrir permissões do app</string>
+    <string name="action_refresh">Atualizar</string>
+    <string name="action_open_settings">Configurações de rede</string>
+    <string name="settings_hint">Dica: nas Configurações do Android, busque por “satélite” para ver se o sistema oferece SOS ou mensagens via satélite.</string>
+
+    <!-- Vereditos -->
+    <string name="verdict_connected_title">Conectado via satélite agora</string>
+    <string name="verdict_connected_body">O aparelho está usando uma rede de satélite neste momento. A conexão é lenta e precisa de céu aberto: prefira mensagens curtas.</string>
+
+    <string name="verdict_carrier_title">Sua operadora oferece satélite neste chip</string>
+    <string name="verdict_carrier_body">A configuração da operadora indica serviço via satélite. Quando não houver sinal de celular nem Wi-Fi, procure a opção de satélite nas Configurações. Pode ser preciso contratar o serviço com a operadora.</string>
+
+    <string name="verdict_device_title">O sistema do aparelho tem suporte a satélite</string>
+    <string name="verdict_device_body">O fabricante incluiu um serviço de satélite neste aparelho. O que fica disponível (SOS, mensagens) depende do país e da operadora; procure “satélite” nas Configurações.</string>
+
+    <string name="verdict_no_telephony_title">Aparelho sem rede móvel</string>
+    <string name="verdict_no_telephony_body">Este aparelho não tem rádio de celular, então não pode se conectar a satélites diretamente.</string>
+
+    <string name="verdict_old_android_title">Android anterior ao 15</string>
+    <string name="verdict_old_android_body">O suporte padrão do Android a satélite chegou no Android 15. Verifique se há atualização do sistema; sem ela, só soluções próprias do fabricante funcionam.</string>
+
+    <string name="verdict_permission_title">Permissão necessária</string>
+    <string name="verdict_permission_body">Para verificar a configuração de satélite da sua operadora, o app precisa ler as informações do chip.</string>
+
+    <string name="verdict_no_sim_title">Nenhum chip ativo</string>
+    <string name="verdict_no_sim_body">Insira ou ative um chip (SIM ou eSIM). O serviço de satélite é sempre fornecido por uma operadora.</string>
+
+    <string name="verdict_not_indicated_title">Nenhum suporte a satélite encontrado</string>
+    <string name="verdict_not_indicated_body">Nem o sistema nem a operadora informam serviço via satélite neste aparelho. Isso depende do hardware e de um acordo da operadora; nenhum app consegue ativar.</string>
+
+    <!-- Permissão -->
+    <string name="section_permission">Ler informações do chip</string>
+    <string name="permission_explanation">A permissão é usada só para ler o nome da operadora e a configuração de satélite do chip. O app não tem acesso à internet e nada sai do aparelho.</string>
+
+    <!-- Conexão agora -->
+    <string name="section_now">Conexão agora</string>
+    <string name="now_ntn">Rede celular via satélite</string>
+    <string name="now_data">Dados via satélite</string>
+    <string name="now_requires_android15">A detecção de conexão via satélite exige Android 15 ou mais recente.</string>
+
+    <!-- Chips -->
+    <string name="section_sim">Chip %1$d · %2$s</string>
+    <string name="section_sim_no_slot">Chip · %1$s</string>
+    <string name="sim_flags_unavailable">Não foi possível ler a configuração desta operadora.</string>
+    <string name="flag_attach">Conexão a satélite habilitada</string>
+    <string name="flag_plmns">Redes de satélite cadastradas</string>
+    <string name="flag_entitlement">Verificação de plano de satélite</string>
+    <string name="flag_esos">SOS via satélite da operadora</string>
+
+    <!-- Aparelho -->
+    <string name="section_device">Aparelho</string>
+    <string name="device_manufacturer">Fabricante</string>
+    <string name="device_model">Modelo</string>
+    <string name="device_android">Android</string>
+    <string name="device_android_value">%1$s (API %2$d)</string>
+    <string name="device_baseband">Versão do modem</string>
+    <string name="device_satellite_service">Serviço de satélite do sistema</string>
+
+    <!-- Como funciona -->
+    <string name="section_how">Como funciona</string>
+    <string name="how_body">Recursos como as mensagens via satélite dos Galaxy S25 e o SOS via satélite dos Pixel 9 não são um “modo escondido” do Android. Eles dependem de duas partes:\n\n• Aparelho: modem e sistema preparados para redes de satélite, integrados pelo fabricante.\n• Operadora: um acordo com um provedor de satélite (como Skylo ou Starlink) e, muitas vezes, um plano específico.\n\nAlgumas operadoras oferecem satélite direto ao celular até em modelos comuns, mas mesmo assim quem ativa é a operadora.\n\nPor isso nenhum app consegue “desbloquear” satélite, e apps que prometem isso são falsos. Este app só lê o que o sistema e a operadora informam, funciona sem internet e não envia dados para lugar nenhum.</string>
+</resources>

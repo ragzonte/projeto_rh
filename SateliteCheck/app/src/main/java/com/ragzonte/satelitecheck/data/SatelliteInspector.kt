@@ -90,10 +90,19 @@ class SatelliteInspector(private val context: Context) {
     @SuppressLint("MissingPermission")
     private fun readCarrierFlags(manager: CarrierConfigManager, subscriptionId: Int): CarrierSatelliteFlags? {
         val config: PersistableBundle = try {
-            manager.getConfigForSubId(subscriptionId)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                // Pede só as chaves de satélite em vez da configuração inteira da operadora.
+                manager.getConfigForSubId(subscriptionId, *CarrierKeys.ALL)
+            } else {
+                @Suppress("DEPRECATION")
+                manager.getConfigForSubId(subscriptionId)
+            }
         } catch (e: SecurityException) {
             null
         } catch (e: UnsupportedOperationException) {
+            null
+        } catch (e: IllegalStateException) {
+            // Serviço de configuração da operadora indisponível no momento.
             null
         } ?: return null
         return CarrierSatelliteFlags(
@@ -114,5 +123,12 @@ class SatelliteInspector(private val context: Context) {
         const val SATELLITE_SERVICES_PER_PROVIDER = "carrier_supported_satellite_services_per_provider_bundle"
         const val SATELLITE_ENTITLEMENT_SUPPORTED = "satellite_entitlement_supported_bool"
         const val SATELLITE_ESOS_SUPPORTED = "satellite_esos_supported_bool"
+
+        val ALL = arrayOf(
+            SATELLITE_ATTACH_SUPPORTED,
+            SATELLITE_SERVICES_PER_PROVIDER,
+            SATELLITE_ENTITLEMENT_SUPPORTED,
+            SATELLITE_ESOS_SUPPORTED,
+        )
     }
 }

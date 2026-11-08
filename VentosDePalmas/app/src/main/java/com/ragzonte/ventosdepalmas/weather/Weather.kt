@@ -1,17 +1,13 @@
 package com.ragzonte.ventosdepalmas.weather
 
-import java.time.ZoneId
-
-/** Palmas, Tocantins. */
-object Palmas {
-    const val LATITUDE = -10.1844
-    const val LONGITUDE = -48.3336
-    val ZONE: ZoneId = ZoneId.of("America/Araguaina")
-}
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 
 /** Leitura do clima atual, como veio da API. */
 data class WeatherSnapshot(
     val fetchedAtMillis: Long,
+    /** Onde a leitura foi feita: evita usar o clima de outra cidade depois de uma viagem. */
+    val latitude: Double,
+    val longitude: Double,
     /** Código de tempo da OMM (WMO), usado pela Open-Meteo. */
     val weatherCode: Int,
     val cloudCoverPercent: Int,
@@ -23,6 +19,32 @@ data class WeatherSnapshot(
     val temperatureC: Double?,
 ) {
     val description: String get() = Wmo.description(weatherCode)
+
+    fun distanceKmTo(location: GeoLocation): Double =
+        location.distanceKmTo(GeoLocation(latitude, longitude, name = null, zoneId = location.zoneId))
+}
+
+/** Quando uma leitura de clima ainda serve e quando buscar outra. */
+object WeatherFreshness {
+    /** Busca de novo a cada 20 minutos com o papel de parede visível. */
+    const val REFRESH_INTERVAL_MS = 20 * 60_000L
+
+    /** Leituras com mais de 3 horas são ignoradas, para não mostrar uma chuva que já passou. */
+    const val MAX_AGE_MS = 3 * 60 * 60_000L
+
+    /** Andou mais que isso desde a leitura: busca o clima do lugar novo. */
+    const val REFETCH_DISTANCE_KM = 10.0
+
+    /** Leituras de mais longe que isso não representam o lugar atual. */
+    const val MAX_DISTANCE_KM = 30.0
+
+    fun isUsable(snapshot: WeatherSnapshot, location: GeoLocation, nowMillis: Long): Boolean =
+        nowMillis - snapshot.fetchedAtMillis <= MAX_AGE_MS && snapshot.distanceKmTo(location) <= MAX_DISTANCE_KM
+
+    fun needsRefresh(snapshot: WeatherSnapshot?, location: GeoLocation, nowMillis: Long): Boolean =
+        snapshot == null ||
+            nowMillis - snapshot.fetchedAtMillis >= REFRESH_INTERVAL_MS ||
+            snapshot.distanceKmTo(location) > REFETCH_DISTANCE_KM
 }
 
 enum class Precipitation(val intensity: Float) {
@@ -44,7 +66,7 @@ data class WeatherConditions(
     val windDirectionDeg: Double,
 ) {
     companion object {
-        /** Usado enquanto não há leitura recente: céu quase limpo e brisa leste, típicos de Palmas. */
+        /** Usado enquanto não há leitura recente do lugar: céu quase limpo e brisa leve. */
         val DEFAULT = WeatherConditions(
             cloudCover = 0.15f,
             precipitation = Precipitation.NONE,

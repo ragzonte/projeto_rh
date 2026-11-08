@@ -5,30 +5,34 @@ import com.ragzonte.ventosdepalmas.astro.MoonPosition
 import com.ragzonte.ventosdepalmas.astro.SunPosition
 import com.ragzonte.ventosdepalmas.scene.Colors.lerp
 import com.ragzonte.ventosdepalmas.scene.Colors.rgb
-import com.ragzonte.ventosdepalmas.weather.Palmas
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import com.ragzonte.ventosdepalmas.weather.WeatherConditions
 import java.time.Instant
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.sin
 
-/** Momento + céu + tempo em Palmas: tudo que define a aparência da cena. */
+/** Momento + lugar + céu + tempo: tudo que define a aparência da cena. */
 class Environment(
     val instant: Instant,
     val sun: SunPosition,
     val moon: MoonPosition,
     val siderealDeg: Double,
     val weather: WeatherConditions,
-    /** Mês em Palmas (1 a 12), para a cor do cerrado. */
+    /** Mês no fuso do lugar (1 a 12), para a cor da vegetação. */
     val month: Int,
+    /** Latitude do lugar: define se a estação seca é a do cerrado ou a do sul. */
+    val latitude: Double,
 ) {
     companion object {
-        fun at(instant: Instant, weather: WeatherConditions): Environment = Environment(
+        fun at(instant: Instant, weather: WeatherConditions, location: GeoLocation): Environment = Environment(
             instant = instant,
-            sun = Astronomy.sun(instant, Palmas.LATITUDE, Palmas.LONGITUDE),
-            moon = Astronomy.moon(instant, Palmas.LATITUDE, Palmas.LONGITUDE),
-            siderealDeg = Astronomy.localSiderealDeg(instant, Palmas.LONGITUDE),
+            sun = Astronomy.sun(instant, location.latitude, location.longitude),
+            moon = Astronomy.moon(instant, location.latitude, location.longitude),
+            siderealDeg = Astronomy.localSiderealDeg(instant, location.longitude),
             weather = weather,
-            month = instant.atZone(Palmas.ZONE).monthValue,
+            month = instant.atZone(location.zone).monthValue,
+            latitude = location.latitude,
         )
     }
 }
@@ -124,7 +128,7 @@ class Look(
             val cloudTop = lerp(lerp(nightCloudTop, dayCloudTop, daylight), rgb(0xFFC9A8), horizonGlow * 0.3f)
             val cloudBottom = lerp(lerp(nightCloudBottom, dayCloudBottom, daylight), horizonGlowColor, horizonGlow * 0.6f)
 
-            val dryness = DRYNESS[(env.month - 1).coerceIn(0, 11)]
+            val dryness = dryness(env.month, env.latitude)
             fun ground(green: Int, dry: Int, nightColor: Int): Int {
                 val day = Colors.scale(lerp(green, dry, dryness), 1f - 0.3f * gloom)
                 return lerp(nightColor, day, light)
@@ -181,8 +185,24 @@ class Look(
             )
         }
 
-        /** Seca do cerrado por mês: 0 = verde (chuvas, nov–abr), 1 = dourado (seca, jun–set). */
-        private val DRYNESS = floatArrayOf(0f, 0f, 0f, 0.1f, 0.4f, 0.75f, 1f, 1f, 0.9f, 0.6f, 0.25f, 0.05f)
+        /**
+         * Quanto a vegetação está seca (0 verde, 1 dourada), aproximado por mês e latitude:
+         * nos trópicos segue o cerrado (chuvas nov–abr, seca jun–set); a partir de ≈ 22° vale o padrão
+         * subtropical do Sul, verde quase o ano todo e um pouco amarelado no inverno. No hemisfério
+         * norte as estações se invertem.
+         */
+        internal fun dryness(month: Int, latitude: Double): Float {
+            val southernMonth = if (latitude < 0) month else (month + 5) % 12 + 1
+            val index = (southernMonth - 1).coerceIn(0, 11)
+            val subtropical = smoothstep(18f, 26f, abs(latitude).toFloat())
+            return lerp(TROPICAL_DRYNESS[index], SUBTROPICAL_DRYNESS[index], subtropical)
+        }
+
+        /** Cerrado por mês (hemisfério sul): verde nas chuvas, dourado na seca. */
+        private val TROPICAL_DRYNESS = floatArrayOf(0f, 0f, 0f, 0.1f, 0.4f, 0.75f, 1f, 1f, 0.9f, 0.6f, 0.25f, 0.05f)
+
+        /** Subtropical (ex.: Paraná): campo verde, amarelado pelo frio no inverno. */
+        private val SUBTROPICAL_DRYNESS = floatArrayOf(0f, 0f, 0.05f, 0.1f, 0.2f, 0.3f, 0.35f, 0.3f, 0.15f, 0.05f, 0f, 0f)
 
         /** Céu limpo por altura do Sol (graus): cores de topo, meio e horizonte em cada ponto. */
         private val SKY_ALTITUDES = floatArrayOf(-18f, -12f, -6f, -2f, 1f, 6f, 15f, 40f)

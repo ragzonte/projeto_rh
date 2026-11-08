@@ -1,5 +1,6 @@
 package com.ragzonte.ventosdepalmas.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +21,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -37,8 +39,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.ragzonte.ventosdepalmas.R
+import com.ragzonte.ventosdepalmas.data.LocationRepository
 import com.ragzonte.ventosdepalmas.data.WallpaperSettings
-import com.ragzonte.ventosdepalmas.weather.Palmas
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import com.ragzonte.ventosdepalmas.weather.WeatherConditions
 import com.ragzonte.ventosdepalmas.weather.WeatherPreset
 import com.ragzonte.ventosdepalmas.weather.WeatherSnapshot
@@ -54,6 +57,14 @@ data class WeatherUiState(
     val error: String? = null,
 )
 
+data class LocationUiState(
+    val location: GeoLocation = GeoLocation.PALMAS_TO,
+    val fromDevice: Boolean = false,
+    val hasPermission: Boolean = false,
+    val locating: Boolean = false,
+    val problem: LocationRepository.Problem? = null,
+)
+
 /** Proporção da tela do Honor Magic7 (1280 × 2800), usada na prévia. */
 private const val SCREEN_ASPECT = 1280f / 2800f
 
@@ -61,9 +72,13 @@ private const val SCREEN_ASPECT = 1280f / 2800f
 @Composable
 fun MainScreen(
     weather: WeatherUiState,
+    place: LocationUiState,
     wallpaperActive: Boolean,
     framesPerSecond: Int,
     onRefresh: () -> Unit,
+    onUseDeviceLocation: () -> Unit,
+    onOpenAppSettings: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
     onSetWallpaper: () -> Unit,
     onFramesPerSecondChange: (Int) -> Unit,
 ) {
@@ -83,6 +98,7 @@ fun MainScreen(
                 AndroidView(
                     factory = { ScenePreviewView(it) },
                     update = { view ->
+                        view.location = place.location
                         view.liveWeather = weather.conditions
                         view.hourOverride = previewHour
                         view.weatherOverride = previewPreset?.conditions
@@ -99,7 +115,8 @@ fun MainScreen(
                 Text(stringResource(if (wallpaperActive) R.string.action_wallpaper_active else R.string.action_set_wallpaper))
             }
 
-            WeatherCard(weather, onRefresh)
+            LocationCard(place, onUseDeviceLocation, onOpenAppSettings, onOpenLocationSettings)
+            WeatherCard(weather, place.location, onRefresh)
             SimulationCard(
                 hour = previewHour,
                 preset = previewPreset,
@@ -119,8 +136,55 @@ fun MainScreen(
 }
 
 @Composable
-private fun WeatherCard(weather: WeatherUiState, onRefresh: () -> Unit) {
-    SectionCard(title = stringResource(R.string.section_weather)) {
+private fun LocationCard(
+    place: LocationUiState,
+    onUseDeviceLocation: () -> Unit,
+    onOpenAppSettings: () -> Unit,
+    onOpenLocationSettings: () -> Unit,
+) {
+    SectionCard(title = stringResource(R.string.section_location)) {
+        Text(place.location.label, style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(
+                when {
+                    place.locating -> R.string.location_locating
+                    place.fromDevice -> R.string.location_from_device
+                    else -> R.string.location_default
+                },
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        when (place.problem) {
+            LocationRepository.Problem.NO_PERMISSION -> {
+                ProblemText(R.string.location_problem_permission)
+                OutlinedButton(onClick = onOpenAppSettings) { Text(stringResource(R.string.action_app_settings)) }
+            }
+            LocationRepository.Problem.LOCATION_OFF -> {
+                ProblemText(R.string.location_problem_off)
+                OutlinedButton(onClick = onOpenLocationSettings) { Text(stringResource(R.string.action_location_settings)) }
+            }
+            LocationRepository.Problem.UNAVAILABLE -> ProblemText(R.string.location_problem_unavailable)
+            null -> Unit
+        }
+        TextButton(onClick = onUseDeviceLocation, enabled = !place.locating) {
+            Text(stringResource(if (place.hasPermission) R.string.action_update_location else R.string.action_use_location))
+        }
+        Text(
+            stringResource(R.string.location_privacy),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ProblemText(@StringRes text: Int) {
+    Text(stringResource(text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+}
+
+@Composable
+private fun WeatherCard(weather: WeatherUiState, location: GeoLocation, onRefresh: () -> Unit) {
+    SectionCard(title = stringResource(R.string.section_weather_at, location.label)) {
         val snapshot = weather.snapshot
         if (snapshot == null) {
             Text(
@@ -138,7 +202,7 @@ private fun WeatherCard(weather: WeatherUiState, onRefresh: () -> Unit) {
                 ),
                 style = MaterialTheme.typography.bodyMedium,
             )
-            val time = Instant.ofEpochMilli(snapshot.fetchedAtMillis).atZone(Palmas.ZONE).format(HOUR_FORMAT)
+            val time = Instant.ofEpochMilli(snapshot.fetchedAtMillis).atZone(location.zone).format(HOUR_FORMAT)
             Text(
                 stringResource(R.string.weather_updated, time),
                 style = MaterialTheme.typography.bodySmall,

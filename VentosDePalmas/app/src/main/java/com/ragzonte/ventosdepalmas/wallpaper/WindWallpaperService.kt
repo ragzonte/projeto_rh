@@ -6,6 +6,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
+import com.ragzonte.ventosdepalmas.data.LocationRepository
 import com.ragzonte.ventosdepalmas.data.WallpaperSettings
 import com.ragzonte.ventosdepalmas.data.WeatherRepository
 import com.ragzonte.ventosdepalmas.render.AndroidVectorCanvas
@@ -13,7 +14,7 @@ import com.ragzonte.ventosdepalmas.scene.Environment
 import com.ragzonte.ventosdepalmas.scene.WindScene
 import java.time.Instant
 
-/** Papel de parede animado: céu de Palmas com torres eólicas. */
+/** Papel de parede animado: torres eólicas sob o céu de onde o aparelho está. */
 class WindWallpaperService : WallpaperService() {
 
     override fun onCreateEngine(): Engine = WindEngine()
@@ -23,8 +24,14 @@ class WindWallpaperService : WallpaperService() {
         private val scene = WindScene()
         private val adapter = AndroidVectorCanvas()
         private val repository = WeatherRepository.get(this@WindWallpaperService)
+        private val locations = LocationRepository.get(this@WindWallpaperService)
         private val settings = WallpaperSettings(this@WindWallpaperService)
         private val weatherListener = WeatherRepository.Listener { updateEnvironment() }
+        private val locationListener = LocationRepository.Listener {
+            // Lugar novo: céu recalculado na hora e clima buscado para lá (se estiver visível).
+            if (visible) repository.refreshIfStale(locations.current)
+            updateEnvironment()
+        }
         private val frame = Runnable { drawFrame() }
 
         private var visible = false
@@ -37,12 +44,14 @@ class WindWallpaperService : WallpaperService() {
             super.onCreate(surfaceHolder)
             setOffsetNotificationsEnabled(true)
             repository.addListener(weatherListener)
+            locations.addListener(locationListener)
             updateEnvironment()
         }
 
         override fun onDestroy() {
             handler.removeCallbacks(frame)
             repository.removeListener(weatherListener)
+            locations.removeListener(locationListener)
             super.onDestroy()
         }
 
@@ -50,7 +59,9 @@ class WindWallpaperService : WallpaperService() {
             this.visible = visible
             if (visible) {
                 frameIntervalMs = 1000L / currentFramesPerSecond()
-                repository.refreshIfStale()
+                // Sem GPS: só confere a última posição que o sistema já conhece.
+                locations.refreshFromLastKnown()
+                repository.refreshIfStale(locations.current)
                 updateEnvironment()
                 lastFrameNanos = 0L
                 drawFrame()
@@ -96,7 +107,8 @@ class WindWallpaperService : WallpaperService() {
 
         private fun updateEnvironment() {
             lastEnvironmentMillis = System.currentTimeMillis()
-            scene.update(Environment.at(Instant.now(), repository.conditions()))
+            val location = locations.current
+            scene.update(Environment.at(Instant.now(), repository.conditions(location), location))
         }
 
         private fun drawFrame() {

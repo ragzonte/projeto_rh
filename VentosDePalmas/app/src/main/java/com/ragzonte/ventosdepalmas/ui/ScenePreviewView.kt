@@ -3,10 +3,10 @@ package com.ragzonte.ventosdepalmas.ui
 import android.content.Context
 import android.graphics.Canvas
 import android.view.View
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import com.ragzonte.ventosdepalmas.render.AndroidVectorCanvas
 import com.ragzonte.ventosdepalmas.scene.Environment
 import com.ragzonte.ventosdepalmas.scene.WindScene
-import com.ragzonte.ventosdepalmas.weather.Palmas
 import com.ragzonte.ventosdepalmas.weather.WeatherConditions
 import java.time.Instant
 import java.time.LocalDate
@@ -20,6 +20,13 @@ class ScenePreviewView(context: Context) : View(context) {
     private var lastFrameNanos = 0L
     private var lastEnvironmentMillis = 0L
 
+    var location: GeoLocation = GeoLocation.PALMAS_TO
+        set(value) {
+            if (field == value) return
+            field = value
+            updateEnvironment(settle = true)
+        }
+
     var liveWeather: WeatherConditions = WeatherConditions.DEFAULT
         set(value) {
             if (field == value) return
@@ -27,7 +34,7 @@ class ScenePreviewView(context: Context) : View(context) {
             updateEnvironment(settle = false)
         }
 
-    /** Hora de Palmas a simular (0 a 24); `null` usa a hora atual. */
+    /** Hora local do lugar a simular (0 a 24); `null` usa a hora atual. */
     var hourOverride: Float? = null
         set(value) {
             if (field == value) return
@@ -75,7 +82,7 @@ class ScenePreviewView(context: Context) : View(context) {
 
     private fun updateEnvironment(settle: Boolean) {
         lastEnvironmentMillis = System.currentTimeMillis()
-        scene.update(Environment.at(simulatedInstant(), weatherOverride ?: liveWeather))
+        scene.update(Environment.at(simulatedInstant(), weatherOverride ?: liveWeather, location))
         // Na prévia, mudar hora ou clima deve aparecer na hora, sem a transição suave do papel de parede.
         if (settle) scene.settle()
         invalidate()
@@ -84,6 +91,7 @@ class ScenePreviewView(context: Context) : View(context) {
     private fun simulatedInstant(): Instant {
         val hour = hourOverride ?: return Instant.now()
         val seconds = (hour * 3600).toLong().coerceIn(0L, 86_399L)
-        return ZonedDateTime.of(LocalDate.now(Palmas.ZONE), LocalTime.ofSecondOfDay(seconds), Palmas.ZONE).toInstant()
+        val zone = location.zone
+        return ZonedDateTime.of(LocalDate.now(zone), LocalTime.ofSecondOfDay(seconds), zone).toInstant()
     }
 }

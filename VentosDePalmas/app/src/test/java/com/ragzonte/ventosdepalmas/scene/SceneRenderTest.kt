@@ -1,5 +1,6 @@
 package com.ragzonte.ventosdepalmas.scene
 
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import com.ragzonte.ventosdepalmas.weather.WeatherConditions
 import com.ragzonte.ventosdepalmas.weather.WeatherPreset
 import org.junit.Assert.assertTrue
@@ -17,10 +18,18 @@ class SceneRenderTest {
     private val width = 1280
     private val height = 2800
 
-    private class Scenario(val name: String, val utc: String, val weather: WeatherConditions, val seconds: Float = 2f) {
-        constructor(name: String, utc: String, preset: WeatherPreset, seconds: Float = 2f) :
-            this(name, utc, preset.conditions, seconds)
+    private class Scenario(
+        val name: String,
+        val utc: String,
+        val weather: WeatherConditions,
+        val seconds: Float = 2f,
+        val location: GeoLocation = GeoLocation.PALMAS_TO,
+    ) {
+        constructor(name: String, utc: String, preset: WeatherPreset, seconds: Float = 2f, location: GeoLocation = GeoLocation.PALMAS_TO) :
+            this(name, utc, preset.conditions, seconds, location)
     }
+
+    private val palmasPr = GeoLocation(-26.4839, -51.9888, "Palmas, Paraná", "America/Sao_Paulo")
 
     private val scenarios = listOf(
         Scenario("01-amanhecer", "2026-11-08T08:50:00Z", WeatherPreset.CLEAR),
@@ -37,12 +46,14 @@ class SceneRenderTest {
         Scenario("12-madrugada-seca", "2026-08-10T06:00:00Z", WeatherPreset.CLEAR),
         Scenario("13-noite-chuva", "2026-11-09T00:30:00Z", WeatherPreset.RAIN),
         Scenario("14-tarde-seca", "2026-08-10T19:00:00Z", WeatherPreset.PARTLY_CLOUDY),
+        Scenario("15-parana-amanhecer-inverno", "2026-07-15T10:30:00Z", WeatherPreset.CLEAR, location = palmasPr),
+        Scenario("16-parana-tarde-agosto", "2026-08-10T19:00:00Z", WeatherPreset.PARTLY_CLOUDY, location = palmasPr),
     )
 
     private fun render(scenario: Scenario): SvgCanvas {
         val scene = WindScene()
         scene.resize(width, height)
-        scene.update(Environment.at(Instant.parse(scenario.utc), scenario.weather))
+        scene.update(Environment.at(Instant.parse(scenario.utc), scenario.weather, scenario.location))
         scene.settle()
         var elapsed = 0f
         while (elapsed < scenario.seconds) {
@@ -79,7 +90,7 @@ class SceneRenderTest {
         val stormScenario = scenarios.first { it.name == "09-noite-tempestade" }
         val storm = render(stormScenario)
         val noThunder = render(
-            Scenario("sem-trovao", stormScenario.utc, stormScenario.weather.copy(thunderstorm = false), stormScenario.seconds),
+            Scenario("sem-trovao", stormScenario.utc, stormScenario.weather.copy(thunderstorm = false), stormScenario.seconds, stormScenario.location),
         )
         assertTrue("linhas do raio além da chuva: ${storm.lines} vs ${noThunder.lines}", storm.lines > noThunder.lines + 10)
     }

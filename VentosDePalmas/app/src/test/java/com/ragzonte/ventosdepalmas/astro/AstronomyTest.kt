@@ -1,17 +1,20 @@
 package com.ragzonte.ventosdepalmas.astro
 
-import com.ragzonte.ventosdepalmas.weather.Palmas
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import kotlin.math.min
 
-/** Valores de referência calculados com PyEphem 4.2.1 para Palmas, sem refração. */
+/** Valores de referência calculados com PyEphem 4.2.1 para Palmas (TO e PR), sem refração. */
 class AstronomyTest {
 
-    private fun sun(utc: String) = Astronomy.sun(Instant.parse(utc), Palmas.LATITUDE, Palmas.LONGITUDE)
-    private fun moon(utc: String) = Astronomy.moon(Instant.parse(utc), Palmas.LATITUDE, Palmas.LONGITUDE)
+    private val palmasTo = GeoLocation.PALMAS_TO
+    private val palmasPr = GeoLocation(-26.4839, -51.9888, "Palmas, Paraná", "America/Sao_Paulo")
+
+    private fun sun(utc: String, at: GeoLocation = palmasTo) = Astronomy.sun(Instant.parse(utc), at.latitude, at.longitude)
+    private fun moon(utc: String) = Astronomy.moon(Instant.parse(utc), palmasTo.latitude, palmasTo.longitude)
 
     @Test
     fun `Sol perto do zenite ao meio-dia de novembro`() {
@@ -95,5 +98,15 @@ class AstronomyTest {
         val (dx, dy) = brightSide(crescent)
         assertTrue("lado claro aponta para leste (esquerda), veio dx=$dx", dx < 0)
         assertTrue("lado claro aponta para baixo, veio dy=$dy", dy > 0)
+    }
+
+    @Test
+    fun `Palmas do Parana tem o Sol mais baixo no inverno e nasce mais tarde`() {
+        val winterSunrise = sun("2026-07-15T10:30:00Z", palmasPr)
+        assertEquals(2.19, winterSunrise.altitudeDeg, 1.0)
+        assertEquals(64.62, winterSunrise.azimuthDeg, 1.5)
+        val summerNoon = sun("2026-12-21T15:00:00Z", palmasPr)
+        assertEquals(83.35, summerNoon.altitudeDeg, 1.0)
+        assertEquals("mesmo instante no Tocantins: Sol já bem mais alto", 12.31, sun("2026-07-15T10:30:00Z").altitudeDeg, 1.0)
     }
 }

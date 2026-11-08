@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Só para buscar o clima de Palmas na Open-Meteo. -->
+    <!-- Para buscar o clima do lugar na Open-Meteo. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Localização aproximada (cidade): basta para o céu e o clima; o GPS preciso não é pedido. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <!-- Funciona também em aparelhos sem localização (usa o local padrão). -->
+    <uses-feature
+        android:name="android.hardware.location"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.location.network"
+        android:required="false" />
 
     <uses-feature
         android:name="android.software.live_wallpaper"

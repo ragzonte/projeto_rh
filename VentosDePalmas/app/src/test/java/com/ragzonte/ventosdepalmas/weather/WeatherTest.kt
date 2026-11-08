@@ -1,16 +1,23 @@
 package com.ragzonte.ventosdepalmas.weather
 
+import com.ragzonte.ventosdepalmas.geo.GeoLocation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
+import java.util.Locale
 
 class WeatherTest {
 
-    private fun snapshot(code: Int, cover: Int = 50, mm: Double = 0.0) = WeatherSnapshot(
-        fetchedAtMillis = 0,
+    private val palmasTo = GeoLocation.PALMAS_TO
+    private val palmasPr = GeoLocation(-26.4839, -51.9888, "Palmas, Paraná", "America/Sao_Paulo")
+
+    private fun snapshot(code: Int, cover: Int = 50, mm: Double = 0.0, at: GeoLocation = palmasTo, time: Long = 0) = WeatherSnapshot(
+        fetchedAtMillis = time,
+        latitude = at.latitude,
+        longitude = at.longitude,
         weatherCode = code,
         cloudCoverPercent = cover,
         precipitationMm = mm,
@@ -69,8 +76,9 @@ class WeatherTest {
              "current":{"time":"2026-11-08T15:00","interval":900,"temperature_2m":33.4,"precipitation":0.2,
                         "weather_code":80,"cloud_cover":72,"wind_speed_10m":9.4,"wind_direction_10m":101}}
         """.trimIndent()
-        val parsed = OpenMeteo.parse(json, fetchedAtMillis = 1234L)
+        val parsed = OpenMeteo.parse(json, fetchedAtMillis = 1234L, location = palmasPr)
         assertEquals(1234L, parsed.fetchedAtMillis)
+        assertEquals(palmasPr.latitude, parsed.latitude, 1e-9)
         assertEquals(80, parsed.weatherCode)
         assertEquals(72, parsed.cloudCoverPercent)
         assertEquals(0.2, parsed.precipitationMm, 1e-9)
@@ -82,7 +90,7 @@ class WeatherTest {
 
     @Test
     fun `campos opcionais ausentes usam padroes`() {
-        val parsed = OpenMeteo.parse("""{"current":{"weather_code":0}}""", 0L)
+        val parsed = OpenMeteo.parse("""{"current":{"weather_code":0}}""", 0L, palmasTo)
         assertEquals(0, parsed.cloudCoverPercent)
         assertEquals(0.0, parsed.precipitationMm, 1e-9)
         assertNull(parsed.temperatureC)
@@ -90,13 +98,40 @@ class WeatherTest {
 
     @Test(expected = IOException::class)
     fun `resposta invalida vira IOException`() {
-        OpenMeteo.parse("""{"erro": true}""", 0L)
+        OpenMeteo.parse("""{"erro": true}""", 0L, palmasTo)
     }
 
     @Test
-    fun `endereco da API aponta para Palmas`() {
-        assertTrue(OpenMeteo.ENDPOINT.startsWith("https://api.open-meteo.com/"))
-        assertTrue(OpenMeteo.ENDPOINT.contains("latitude=-10.1844"))
-        assertTrue(OpenMeteo.ENDPOINT.contains("longitude=-48.3336"))
+    fun `endereco usa a localizacao com ponto decimal mesmo em portugues`() {
+        val original = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.forLanguageTag("pt-BR"))
+            val url = OpenMeteo.endpoint(palmasPr)
+            assertTrue(url.startsWith("https://api.open-meteo.com/"))
+            assertTrue(url, url.contains("latitude=-26.48&longitude=-51.99"))
+            assertTrue(OpenMeteo.endpoint(palmasTo).contains("latitude=-10.18&longitude=-48.33"))
+        } finally {
+            Locale.setDefault(original)
+        }
+    }
+
+    @Test
+    fun `leitura vale para o mesmo lugar e por ate 3 horas`() {
+        val reading = snapshot(0, at = palmasTo, time = 0L)
+        val hour = 60 * 60_000L
+        assertTrue(WeatherFreshness.isUsable(reading, palmasTo, 2 * hour))
+        assertFalse("velha demais", WeatherFreshness.isUsable(reading, palmasTo, 4 * hour))
+        assertFalse("clima do Tocantins não serve para o Paraná", WeatherFreshness.isUsable(reading, palmasPr, 0L))
+    }
+
+    @Test
+    fun `busca de novo quando envelhece ou quando o lugar muda`() {
+        val reading = snapshot(0, at = palmasTo, time = 0L)
+        assertTrue(WeatherFreshness.needsRefresh(null, palmasTo, 0L))
+        assertFalse(WeatherFreshness.needsRefresh(reading, palmasTo, 5 * 60_000L))
+        assertTrue(WeatherFreshness.needsRefresh(reading, palmasTo, 21 * 60_000L))
+        assertTrue(WeatherFreshness.needsRefresh(reading, palmasPr, 5 * 60_000L))
+        val nearby = palmasTo.copy(latitude = palmasTo.latitude + 0.03)
+        assertFalse("3 km não exige nova busca", WeatherFreshness.needsRefresh(reading, nearby, 5 * 60_000L))
     }
 }

@@ -19,6 +19,7 @@ class LookTest {
         moonAlt: Double = -30.0,
         moonFraction: Double = 0.5,
         month: Int = 1,
+        latitude: Double = -10.18,
     ) = Environment(
         instant = Instant.EPOCH,
         sun = SunPosition(sunAlt, 90.0, if (sunAlt > 0) -30.0 else 120.0),
@@ -26,6 +27,7 @@ class LookTest {
         siderealDeg = 0.0,
         weather = weather,
         month = month,
+        latitude = latitude,
     )
 
     private fun look(
@@ -34,7 +36,8 @@ class LookTest {
         moonAlt: Double = -30.0,
         moonFraction: Double = 0.5,
         month: Int = 1,
-    ) = Look.from(env(sunAlt, weather, moonAlt, moonFraction, month))
+        latitude: Double = -10.18,
+    ) = Look.from(env(sunAlt, weather, moonAlt, moonFraction, month, latitude))
 
     private fun isGreyish(color: Int) = abs(Colors.blue(color) - Colors.red(color)) < 45
 
@@ -108,6 +111,17 @@ class LookTest {
         val august = look(60.0, month = 8).nearHill
         assertTrue("janeiro mais verde", Colors.green(january) > Colors.red(january))
         assertTrue("agosto mais dourado", Colors.red(august) > Colors.red(january) + 30)
+    }
+
+    @Test
+    fun `estacao seca depende da latitude`() {
+        assertEquals("cerrado (TO) em agosto", 1f, Look.dryness(8, -10.18), 0.001f)
+        assertTrue("Paraná em agosto quase verde", Look.dryness(8, -26.48) < 0.4f)
+        assertEquals("janeiro verde nos dois", 0f, Look.dryness(1, -26.48), 0.001f)
+        assertEquals("hemisfério norte inverte: fevereiro lá é agosto aqui", Look.dryness(8, -10.0), Look.dryness(2, 10.0), 0.001f)
+        val parana = look(60.0, month = 8, latitude = -26.48).nearHill
+        val tocantins = look(60.0, month = 8, latitude = -10.18).nearHill
+        assertTrue("em agosto o Paraná fica mais verde que o Tocantins", Colors.green(parana) - Colors.red(parana) > Colors.green(tocantins) - Colors.red(tocantins))
     }
 
     @Test

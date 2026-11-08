@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sol nascendo atrás de um morro de cerrado com uma torre eólica. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFB04A" android:pathData="M27,46 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0 Z" />
+    <path android:fillColor="#3E6B2F" android:pathData="M0,78 C22,69 44,73 62,77 C78,80 94,72 108,74 L108,108 L0,108 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M55.5,80 L56.3,44 L57.7,44 L58.5,80 Z" />
+    <group android:translateX="57" android:translateY="44" android:rotation="-8">
+        <path android:fillColor="#FFFFFF" android:pathData="M-1.3,0 C-1.8,-6 -0.9,-14 0,-19 C1.7,-13 2.5,-5 1.3,0 Z" />
+        <group android:rotation="120"><path android:fillColor="#FFFFFF" android:pathData="M-1.3,0 C-1.8,-6 -0.9,-14 0,-19 C1.7,-13 2.5,-5 1.3,0 Z" /></group>
+        <group android:rotation="240"><path android:fillColor="#FFFFFF" android:pathData="M-1.3,0 C-1.8,-6 -0.9,-14 0,-19 C1.7,-13 2.5,-5 1.3,0 Z" /></group>
+    </group>
+    <path android:fillColor="#FFFFFF" android:pathData="M54.8,44 a2.2,2.2 0 1,0 4.4,0 a2.2,2.2 0 1,0 -4.4,0 Z" />
+</vector>

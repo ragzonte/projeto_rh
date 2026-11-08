@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
+    <string name="app_name">Ventos de Palmas</string>
+    <string name="wallpaper_description">Torres eólicas sob o céu de Palmas-TO. Sol, Lua, estrelas, nuvens e chuva mudam com a hora e o clima.</string>
+    <string name="wallpaper_picker_missing">Não encontrei o seletor de papel de parede animado. Abra Configurações › Papel de parede.</string>
+
+    <string name="action_set_wallpaper">Definir como papel de parede</string>
+    <string name="action_wallpaper_active">Papel de parede ativo · abrir de novo</string>
+    <string name="action_refresh">Atualizar clima</string>
+
+    <string name="section_weather">Clima em Palmas agora</string>
+    <string name="weather_loading">Buscando o clima de Palmas…</string>
+    <string name="weather_loading_short">Atualizando…</string>
+    <string name="weather_empty">Ainda sem dados do clima. Sem internet, a cena mostra céu limpo e brisa leve.</string>
+    <string name="weather_details">Vento %1$d km/h · nuvens %2$d%%</string>
+    <string name="weather_updated">Atualizado às %1$s</string>
+    <string name="weather_error">Não foi possível atualizar agora (sem conexão?). Tentarei de novo em alguns minutos.</string>
+
+    <string name="section_simulation">Simular na prévia</string>
+    <string name="simulation_hint">Só muda a prévia acima; o papel de parede sempre usa a hora e o clima reais.</string>
+    <string name="simulation_real_weather">Clima real</string>
+    <string name="simulation_now">Agora</string>
+    <string name="simulation_real_time">Hora real</string>
+    <string name="simulation_hour">Hora: %1$s</string>
+
+    <string name="section_fps">Animação</string>
+    <string name="fps_saver">Economia · %1$d qps</string>
+    <string name="fps_default">Padrão · %1$d qps</string>
+    <string name="fps_smooth">Suave · %1$d qps</string>
+    <string name="fps_hint">30 quadros por segundo já deixam as pás e a chuva fluidas gastando pouca bateria. Com a economia de bateria do sistema ligada, o papel de parede usa 15.</string>
+
+    <string name="credits">Clima: Open-Meteo.com (CC BY 4.0), atualizado a cada 20 min só com o papel de parede visível. Sol, Lua e estrelas são calculados no próprio celular.</string>
+</resources>
